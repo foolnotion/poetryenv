@@ -25,7 +25,6 @@
       in {
         devShells.poetryOnly = pkgs.mkShell {
           buildInputs = [ pkgs.poetry ];
-
         };
 
         devShells.default = pkgs.mkShell rec {
@@ -44,6 +43,9 @@
               matplotlib = super.matplotlib.overridePythonAttrs (old: {
                 buildInputs = (old.buildInputs or [ ]) ++ [ super.pybind11 ];
               });
+              pandas = super.pandas.overridePythonAttrs (old: {
+                buildInputs = (old.buildInputs or [ ]) ++ [ super.versioneer ];
+              });
               rfc3986-validator = super.rfc3986-validator.overridePythonAttrs (old: {
                 buildInputs = (old.buildInputs or [ ]) ++ [ super.setuptools super.pytest-runner ];
               });
@@ -56,6 +58,15 @@
               jupyter-server-terminals = super.jupyter-server-terminals.overridePythonAttrs (old: {
                 buildInputs = (old.buildInputs or [ ]) ++ [ super.hatchling ];
               });
+              attrs = super.attrs.overridePythonAttrs (old: {
+                buildInputs = (old.buildInputs or [ ]) ++ [ super.hatchling super.hatch-fancy-pypi-readme super.hatch-vcs ];
+              });
+              beautifulsoup4 = super.beautifulsoup4.overridePythonAttrs (old: {
+                buildInputs = (old.buildInputs or [ ]) ++ [ super.hatchling ];
+              });
+              nbconvert = super.nbconvert.overridePythonAttrs (old: {
+                buildInputs = (old.buildInputs or [ ]) ++ [ self.beautifulsoup4 ];
+              });
               y-py = super.y-py.overrideAttrs (old: {
                 buildInputs = (old.buildInputs or [ ]) ++ [ super.pkgs.maturin ];
               });
@@ -66,15 +77,7 @@
           buildInputs = [
             pkgs.poetry
             myenv
-            pyoperon_
-            (pkgs.vscode-with-extensions.override {
-              vscodeExtensions = with pkgs.vscode-extensions; [ ms-python.python ms-toolsai.jupyter ];
-            })
           ];
-
-          shellHook = ''
-            export PYTHONPATH=$PYTHONPATH:${pyoperon_}
-            '';
         };
       });
 }
