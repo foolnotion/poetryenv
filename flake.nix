@@ -24,53 +24,13 @@
         };
       in {
         devShells.poetryOnly = pkgs.mkShell {
-          buildInputs = [ pkgs.poetry ];
+          buildInputs = [ poetry2nix.packages.${system}.poetry ];
         };
 
         devShells.default = pkgs.mkShell rec {
           myenv = mkPoetryEnv {
             projectDir = self;
-            overrides = defaultPoetryOverrides.extend (self: super: {
-              cmaes = super.cmaes.overridePythonAttrs (old: {
-                buildInputs = (old.buildInputs or [ ]) ++ [ super.setuptools ];
-              });
-              optuna = super.optuna.overridePythonAttrs (old: {
-                buildInputs = (old.buildInputs or [ ]) ++ [ super.setuptools ];
-              });
-              pmlb = super.pmlb.overridePythonAttrs (old: {
-                buildInputs = (old.buildInputs or [ ]) ++ [ super.setuptools ];
-              });
-              matplotlib = super.matplotlib.overridePythonAttrs (old: {
-                buildInputs = (old.buildInputs or [ ]) ++ [ super.pybind11 ];
-              });
-              pandas = super.pandas.overridePythonAttrs (old: {
-                buildInputs = (old.buildInputs or [ ]) ++ [ super.versioneer ];
-              });
-              rfc3986-validator = super.rfc3986-validator.overridePythonAttrs (old: {
-                buildInputs = (old.buildInputs or [ ]) ++ [ super.setuptools super.pytest-runner ];
-              });
-              jupyter-events = super.jupyter-events.overridePythonAttrs (old: {
-                buildInputs = (old.buildInputs or [ ]) ++ [ super.hatchling ];
-              });
-              jupyter-server = super.jupyter-server.overridePythonAttrs (old: {
-                buildInputs = (old.buildInputs or [ ]) ++ [ super.hatchling ];
-              });
-              jupyter-server-terminals = super.jupyter-server-terminals.overridePythonAttrs (old: {
-                buildInputs = (old.buildInputs or [ ]) ++ [ super.hatchling ];
-              });
-              attrs = super.attrs.overridePythonAttrs (old: {
-                buildInputs = (old.buildInputs or [ ]) ++ [ super.hatchling super.hatch-fancy-pypi-readme super.hatch-vcs ];
-              });
-              beautifulsoup4 = super.beautifulsoup4.overridePythonAttrs (old: {
-                buildInputs = (old.buildInputs or [ ]) ++ [ super.hatchling ];
-              });
-              nbconvert = super.nbconvert.overridePythonAttrs (old: {
-                buildInputs = (old.buildInputs or [ ]) ++ [ self.beautifulsoup4 ];
-              });
-              y-py = super.y-py.overrideAttrs (old: {
-                buildInputs = (old.buildInputs or [ ]) ++ [ super.pkgs.maturin ];
-              });
-            });
+            preferWheels = true;
           };
 
           pyoperon_ = pyoperon.packages.${system}.default;
@@ -78,6 +38,10 @@
             pkgs.poetry
             myenv
           ];
+
+          shellHook = ''
+            export PYTHONPATH=$PYTHONPATH:${pyoperon_}
+            '';
         };
       });
 }
