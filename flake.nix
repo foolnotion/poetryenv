@@ -1,47 +1,51 @@
 {
-  description = "poetry2nix python environment";
+  description = "Application packaged using poetry2nix";
 
-  inputs.flake-utils.url = "github:numtide/flake-utils";
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/master";
-  inputs.poetry2nix = {
-    url = "github:nix-community/poetry2nix/master";
-    inputs.nixpkgs.follows = "nixpkgs";
-  };
-  inputs.pyoperon = {
-    url = "github:heal-research/pyoperon/cpp20";
-    inputs.nixpkgs.follows = "nixpkgs";
+  inputs = {
+    flake-utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = "github:NixOS/nixpkgs/master";
+    poetry2nix = {
+      url = "github:nix-community/poetry2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    pyoperon = {
+      #url = "github:heal-research/pyoperon";
+      url = "path:/home/bogdb/src/pyoperon";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    vstat = {
+      url = "path:/home/bogdb/src/vstat";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils, poetry2nix, pyoperon }:
+  outputs = { self, nixpkgs, flake-utils, poetry2nix, pyoperon, vstat }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        # see for more functions and examples.
-        inherit (poetry2nix.legacyPackages.${system}) mkPoetryEnv;
-        inherit (poetry2nix.legacyPackages.${system}) defaultPoetryOverrides;
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [ poetry2nix.overlay ];
-        };
-      in {
-        devShells.poetryOnly = pkgs.mkShell {
-          buildInputs = [ poetry2nix.packages.${system}.poetry ];
+        # see https://github.com/nix-community/poetry2nix/tree/master#api for more functions and examples.
+        pkgs = nixpkgs.legacyPackages.${system};
+        inherit (poetry2nix.lib.mkPoetry2Nix { inherit pkgs; }) mkPoetryEnv;
+
+        myEnv = mkPoetryEnv {
+          projectDir = self;
+          preferWheels = true;
         };
 
-        devShells.default = pkgs.mkShell rec {
-          myenv = mkPoetryEnv {
-            projectDir = self;
-            preferWheels = true;
-          };
-
-          pyoperon_ = pyoperon.packages.${system}.default;
-          buildInputs = [
+        pythonVersion = "python${pkgs.python3.sourceVersion.major}.${pkgs.python3.sourceVersion.minor}";
+        pyoperon_ = pyoperon.packages.${system}.default ;
+        vstat_ = vstat.packages.${system}.default;
+      in
+      {
+        devShells.default = pkgs.mkShell {
+          buildInputs = [ myEnv ]; 
+          packages = [
             pkgs.poetry
-            myenv
+            pyoperon_
           ];
+        };
 
-          shellHook = ''
-            export PYTHONPATH=$PYTHONPATH:${pyoperon_}
-            '';
+        devShells.poetryOnly = pkgs.mkShell {
+          packages = [ pkgs.poetry ];
         };
       });
 }
